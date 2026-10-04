@@ -93,7 +93,14 @@ TYPES : BEGIN OF lty_vbrp,
           vkorg_auft TYPE vkorg_auft,
           vtweg_auft TYPE vtweg_auft,
           meins      TYPE vbrp-meins, " Added by Pravin Bagul on 25.11.2014
+          vgbel      TYPE vbrp-vgbel, " PGI Date: delivery reference
         END OF lty_vbrp.
+
+" PGI Date
+TYPES : BEGIN OF lty_likp,
+          vbeln     TYPE likp-vbeln,
+          wadat_ist TYPE likp-wadat_ist,
+        END OF lty_likp.
 
 ************* Added & Commented by Pravin Bagul on 26.10.2015 ****
 
@@ -318,6 +325,7 @@ TYPES : BEGIN OF ty_main,
           bezei5       TYPE tvm5t-bezei,
           mvgr5        TYPE mvke-mvgr5,
           GL_netwr        TYPE vbrp-netwr,                         " Net Value for Specific GL
+          wadat_ist    TYPE likp-wadat_ist,                     " Post Goods Issue Date
         END OF ty_main.
 
 ************** Added by Pravin Bagul on 19.11.2014 ************
@@ -398,7 +406,8 @@ DATA : lt_vbrk   TYPE TABLE OF lty_vbrk,
        l_s_t077x TYPE t077x,
        l_t_tvko  TYPE TABLE OF lty_tvko,
        l_s_tvko  TYPE lty_tvko,
-       LT_ACDOCA TYPE TABLE OF TY_ACDOCA.
+       LT_ACDOCA TYPE TABLE OF TY_ACDOCA,
+       lt_likp   TYPE TABLE OF lty_likp. " PGI Date
 
 DATA : lw_vbrk   LIKE LINE OF lt_vbrk,
 *       lw_vbrk TYPE vbrk,
@@ -776,6 +785,7 @@ FORM get_data .
            vkgrp " Added by Nirav
            vkbur " Added by Nirav
            vkorg_auft vtweg_auft meins
+           vgbel " PGI Date
            FROM vbrp
            INTO TABLE lt_vbrp
            FOR ALL ENTRIES IN lt_vbrk
@@ -844,6 +854,14 @@ FORM get_data .
 
       SORT lt_acdoca BY bill_no bill_item.
       """"""""""""""""""""""" added by M GAD """""""""""""""
+
+      " PGI Date
+      SELECT vbeln wadat_ist
+        FROM likp
+        INTO TABLE lt_likp
+        FOR ALL ENTRIES IN lt_vbrp
+        WHERE vbeln = lt_vbrp-vgbel.
+      SORT lt_likp BY vbeln.
     ENDIF.
     SELECT matnr matkl brand_id extwg meins fashgrd
          FROM mara
@@ -1904,6 +1922,12 @@ FORM fill_lt_main .
 
         CLEAR : LS_ACDOCA.
 
+        " PGI Date
+        READ TABLE lt_likp INTO DATA(ls_likp) WITH KEY vbeln = lw_vbrp-vgbel BINARY SEARCH.
+        IF sy-subrc EQ 0.
+          lw_main-wadat_ist = ls_likp-wadat_ist.
+        ENDIF.
+        CLEAR : ls_likp.
 
         COLLECT lw_main INTO lt_main.
 
@@ -2235,7 +2259,8 @@ FORM build_fieldcatalog .
                      'KTEXT'             '20'     'Customer Group'          '' '' '' '' '' 'L' '' '',
                      'MEINS'             '20'     'Base UOM'                '' '' '' '' '' 'L' '' '', "Added by Pravin Bagul on 25.11.2014
                      'BASE_QUAN'         '20'     'Base Quantity'           '' '' '' '' '' 'L' '' '', "Added by Pravin Bagul on 05.01.2015
-                     'GL_NETWR'             '10'     'Net Value for Specific GL'               '' '' '' '' '' 'R' 'WAERK' ''.
+                     'GL_NETWR'             '10'     'Net Value for Specific GL'               '' '' '' '' '' 'R' 'WAERK' '',
+                     'WADAT_IST'         '15'     'Post Goods Issue Date'   '' '' '' '' '' 'L' '' ''.
                     " GL_NETWR
 *                   'WERKS'             '20'     'Site'                    '' '' '' '' '' 'L' '' '', "Added by Pravin Bagul on 14.10.2015
 *                   'NAME1_T'           '20'     'Site Description'        '' '' '' '' '' 'L' '' ''. "Added by Pravin Bagul on 14.10.2015
