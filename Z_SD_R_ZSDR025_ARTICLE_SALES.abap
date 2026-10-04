@@ -488,6 +488,9 @@ DATA : lv_filename     LIKE gxxlt_f-file,            " Inser csc_ryugandh
 DATA : o_wgh01 TYPE TABLE OF wgh01 WITH HEADER LINE INITIAL SIZE 0.
 FIELD-SYMBOLS : <fs_lw_main> TYPE ty_main.
 
+* PGI Date: reference for selection screen
+DATA : gv_wadat TYPE likp-wadat_ist.
+
 SELECTION-SCREEN BEGIN OF BLOCK blck WITH FRAME TITLE TEXT-011.
   SELECT-OPTIONS :
 * s_vbeln       FOR vbrk-vbeln ,                     " Billing Document
@@ -506,6 +509,7 @@ SELECTION-SCREEN BEGIN OF BLOCK blck WITH FRAME TITLE TEXT-011.
    s_matnr       FOR mara-matnr ,                     " Material
    s_extwg       FOR twew-extwg,                      " External Mechendise Catagory
    s_fkdat       FOR vbrk-fkdat  OBLIGATORY,
+   s_wadat       FOR gv_wadat,                        " Post Goods Issue Date
    s_ekgrp       FOR marc-ekgrp,
    s_kdgrp       FOR knvv-kdgrp,
    s_bstnk       FOR vbrk-bstnk_vf,
@@ -1958,6 +1962,10 @@ FORM fill_lt_main .
 
   IF s_kunrg[] IS NOT INITIAL.        "  Added by Marwan Al-Tawansy on 10032016
     DELETE lt_main WHERE kunrg NOT IN s_kunrg.
+  ENDIF.
+
+  IF s_wadat[] IS NOT INITIAL.        "  Post Goods Issue Date
+    DELETE lt_main WHERE wadat_ist NOT IN s_wadat.
   ENDIF.
 
 * Insert csc_ryugandh on Feb 13
