@@ -93,6 +93,7 @@ TYPES : BEGIN OF lty_vbrp,
           vkorg_auft TYPE vkorg_auft,
           vtweg_auft TYPE vtweg_auft,
           meins      TYPE vbrp-meins, " Added by Pravin Bagul on 25.11.2014
+          vgbel      TYPE vbrp-vgbel, " PGI Date: Delivery number
         END OF lty_vbrp.
 
 ************* Added & Commented by Pravin Bagul on 26.10.2015 ****
@@ -209,6 +210,12 @@ TYPES : BEGIN OF lty_vbak,
           bstnk TYPE vbak-bstnk,
         END OF lty_vbak.
 
+* PGI Date: Delivery header
+TYPES : BEGIN OF lty_likp,
+          vbeln     TYPE likp-vbeln,
+          wadat_ist TYPE likp-wadat_ist,
+        END OF lty_likp.
+
 TYPES : BEGIN OF ty_main,
           vbeln        TYPE vbrk-vbeln,                         " Billing Doc
           fkdat        TYPE vbrk-fkdat,
@@ -317,6 +324,7 @@ TYPES : BEGIN OF ty_main,
           mvgr4        TYPE mvke-mvgr4,
           bezei5       TYPE tvm5t-bezei,
           mvgr5        TYPE mvke-mvgr5,
+          wadat_ist    TYPE likp-wadat_ist,                     " Post Goods Issue Date
         END OF ty_main.
 
 ************** Added by Pravin Bagul on 19.11.2014 ************
@@ -416,6 +424,10 @@ DATA : lw_vbrk   LIKE LINE OF lt_vbrk,
        lw_vbak   TYPE lty_vbak, "Added by Assadulla Khan
        gt_marm   TYPE TABLE OF lty_marm, " Added by Pravin Bagul on 05.01.2015
        gw_marm   TYPE lty_marm. " Added by Pravin Bagul on 05.01.2015
+
+* PGI Date
+DATA : lt_likp TYPE TABLE OF lty_likp,
+       lw_likp TYPE lty_likp.
 *       it_t001w TYPE TABLE OF ty_t001w,"Added by Pravin Bagul on 14.10.2015
 *       wa_t001w TYPE ty_t001w."Added by Pravin Bagul on 14.10.2015
 
@@ -769,6 +781,7 @@ FORM get_data .
            vkgrp " Added by Nirav
            vkbur " Added by Nirav
            vkorg_auft vtweg_auft meins
+           vgbel " PGI Date
            FROM vbrp
            INTO TABLE lt_vbrp
            FOR ALL ENTRIES IN lt_vbrk
@@ -826,6 +839,13 @@ FORM get_data .
       FOR ALL ENTRIES IN lt_vbrp
       WHERE vbeln = lt_vbrp-aubel.
 *******End of add by Assadulla Khan*******
+
+* PGI Date: VBRP-VGBEL = LIKP-VBELN
+      SELECT vbeln wadat_ist
+        FROM likp
+        INTO TABLE lt_likp
+        FOR ALL ENTRIES IN lt_vbrp
+        WHERE vbeln = lt_vbrp-vgbel.
 
     ENDIF.
     SELECT matnr matkl brand_id extwg meins fashgrd
@@ -1151,6 +1171,8 @@ FORM fill_lt_main .
 *       it_t001w BY werks. "Added by Pravin Bagul on 14.10.2015
 
   SORT lt_makt BY matnr spras."ECDK910782(+)
+
+  SORT lt_likp BY vbeln. " PGI Date
 
   CLEAR lv_tabix.
 
@@ -1881,6 +1903,13 @@ FORM fill_lt_main .
 *          ENDIF.
 ******************************************************************************
 
+        " Post Goods Issue Date
+        CLEAR lw_likp.
+        READ TABLE lt_likp INTO lw_likp WITH KEY vbeln = lw_vbrp-vgbel BINARY SEARCH.
+        IF sy-subrc = 0.
+          lw_main-wadat_ist = lw_likp-wadat_ist.
+        ENDIF.
+
         COLLECT lw_main INTO lt_main.
 
         CLEAR : lw_main,
@@ -2116,6 +2145,8 @@ FORM build_fieldcatalog .
                    'VTEXT'             '20'     'Sales Org desc'           '' '' '' '' '' 'L' '' 'X',
 
                    'BSTNK_VF'          '10'     'PO'                       '' '' '' '' '' 'L' '' 'X', "Marwan 20012016
+
+                   'WADAT_IST'         '15'     'Post Goods Issue Date'    '' '' '' '' '' 'L' '' '',
 
 *                   'WAERK'             '10'     'Currency'                 '' '' '' 'X' '' 'L' '' '',
 
